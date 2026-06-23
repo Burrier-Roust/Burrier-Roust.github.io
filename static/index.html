@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSK 智能学习系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        hsk: {
+                            light: '#fffbeb',
+                            DEFAULT: '#f59e0b',
+                            dark: '#b45309',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col overflow-hidden">
+
+    <!-- ====== 顶部导航 ====== -->
+    <header class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0 shadow-sm z-10">
+        <div class="flex items-center gap-3">
+            <h1 class="text-xl font-bold text-gray-800">HSK 智能学习系统</h1>
+            <span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">HSK 6级</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <!-- 自定义课文选择器 -->
+            <div class="relative" id="lesson-dropdown">
+                <button id="lesson-dropdown-btn" class="flex items-center gap-2.5 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 hover:border-amber-300 hover:shadow-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                    <span id="current-lesson-label" class="font-medium">加载中...</span>
+                    <span id="lesson-badge-mini" class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">HSK 6下</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 transition-transform duration-200" id="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <!-- 下拉菜单 -->
+                <div id="lesson-dropdown-menu" class="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-lg shadow-gray-200/50 overflow-hidden z-20 hidden transition-all duration-200 origin-top-right">
+                    <div class="py-1 max-h-64 overflow-y-auto" id="lesson-dropdown-list">
+                        <div class="px-4 py-3 text-sm text-gray-400 text-center">加载中...</div>
+                    </div>
+                </div>
+            </div>
+            <span id="lesson-badge" class="text-xs text-gray-500 hidden"></span>
+        </div>
+    </header>
+
+    <!-- ====== 主内容区：双栏布局 ====== -->
+    <main class="flex-1 flex main-layout overflow-hidden">
+
+        <!-- 左侧：课文阅读区 -->
+        <section class="reading-panel w-[55%] min-w-[400px] flex flex-col border-r border-gray-200 bg-white">
+            <!-- 音频控制栏 -->
+            <div class="px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center gap-4 shrink-0">
+                <button id="play-btn" class="w-10 h-10 rounded-full bg-hsk text-white flex items-center justify-center hover:bg-hsk-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm" title="播放/暂停">
+                    <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+                <div class="flex-1">
+                    <audio id="audio-player" class="w-full h-8" preload="none">
+                        您的浏览器不支持音频播放。
+                    </audio>
+                </div>
+                <span id="audio-status" class="text-xs text-gray-400 shrink-0"></span>
+            </div>
+
+            <!-- 课文标题 -->
+            <div class="px-6 py-4 border-b border-gray-100 shrink-0">
+                <h2 id="lesson-title" class="text-2xl font-bold text-gray-800">加载中...</h2>
+                <p class="text-xs text-gray-400 mt-1">点击文中 <span class="text-amber-500 border-b border-dashed border-amber-400">橙色下划线</span> 词语查看详情</p>
+            </div>
+
+            <!-- 课文文本 -->
+            <div id="reading-area" class="flex-1 overflow-y-auto px-8 py-6">
+                <div id="text-container" class="text-lg leading-loose text-gray-700 space-y-4">
+                    <div class="flex items-center justify-center py-12">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+
+                <!-- 课文注释 -->
+                <div id="reading-notes" class="hidden border-t border-gray-100 px-8 py-5 space-y-3 bg-gray-50/50">
+                    <h4 class="text-sm font-bold text-gray-500 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        课文注释
+                    </h4>
+                    <div id="notes-list" class="space-y-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧：动态侧边栏 -->
+        <aside class="sidebar-panel w-[45%] min-w-[360px] flex flex-col bg-white overflow-hidden">
+            <div id="sidebar-content" class="flex-1 overflow-y-auto">
+
+                <!-- 默认状态：未选中词汇 -->
+                <div id="sidebar-empty" class="flex flex-col items-center justify-center h-full text-gray-400 px-8 py-12">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                    </svg>
+                    <p class="text-base font-medium text-gray-500">点击左侧课文中的词语</p>
+                    <p class="text-sm mt-1">查看词汇详情、例句搭配和即时练习</p>
+                </div>
+
+                <!-- 词汇详情（点击后显示） -->
+                <div id="sidebar-word-detail" class="hidden px-6 py-5 space-y-5">
+
+                    <!-- 1. 词汇详情 -->
+                    <section class="sidebar-section">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">词汇详情</span>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <div class="flex items-baseline gap-2 mb-2">
+                                <h3 id="wd-word" class="text-3xl font-bold text-gray-800"></h3>
+                                <span id="wd-pos" class="text-sm text-gray-400 italic"></span>
+                            </div>
+                            <p id="wd-pinyin" class="text-lg text-amber-600 mb-2"></p>
+                            <p id="wd-definition" class="text-sm text-gray-600 leading-relaxed"></p>
+                        </div>
+                        <div id="wd-context" class="mt-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg p-3">
+                            <p class="text-xs text-amber-700 font-medium mb-1">课文语境解释</p>
+                            <p id="wd-context-text" class="text-sm text-amber-800 leading-relaxed"></p>
+                        </div>
+                    </section>
+
+                    <!-- 2. 例句与搭配 -->
+                    <section id="section-collocations" class="sidebar-section">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">搭配与例句</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div id="wd-collocations" class="flex flex-wrap gap-1.5"></div>
+                            <div id="wd-examples" class="space-y-2"></div>
+                        </div>
+                    </section>
+
+                    <!-- 3. 语法点说明 -->
+                    <section id="section-grammar" class="sidebar-section hidden">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">语法点</span>
+                        </div>
+                        <div class="bg-purple-50 rounded-xl p-4">
+                            <p id="wd-grammar" class="text-sm text-purple-800 leading-relaxed"></p>
+                        </div>
+                    </section>
+
+                    <!-- 4. 即时小练习 -->
+                    <section id="section-exercises" class="sidebar-section hidden">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">即时练习</span>
+                        </div>
+                        <div id="wd-exercises" class="space-y-4"></div>
+                    </section>
+
+                    <!-- 5. AI 智能问答 -->
+                    <section class="sidebar-section">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">AI 问答</span>
+                        </div>
+                        <div class="border border-gray-200 rounded-xl overflow-hidden">
+                            <div id="chat-messages" class="chat-messages h-40 overflow-y-auto p-3 space-y-2 bg-gray-50 text-sm">
+                                <div class="text-gray-400 text-center text-xs py-4">对「<span id="chat-word-ref"></span>」有什么疑问？直接问我吧</div>
+                            </div>
+                            <div class="flex border-t border-gray-200">
+                                <input id="chat-input" type="text" placeholder="输入你的问题..." class="flex-1 px-3 py-2 text-sm outline-none text-gray-700">
+                                <button id="chat-send-btn" class="px-4 py-2 bg-indigo-500 text-white text-sm hover:bg-indigo-600 transition-colors shrink-0">发送</button>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

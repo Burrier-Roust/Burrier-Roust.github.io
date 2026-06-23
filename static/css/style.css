@@ -1,0 +1,353 @@
+/* ===== HSK 智能学习系统 - 自定义样式 ===== */
+
+/* 词汇标签基础样式 */
+.vocab-token {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    padding: 1px 3px;
+    position: relative;
+}
+
+.vocab-token:hover {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.vocab-token.key-vocab {
+    border-bottom: 2px dashed #f59e0b;
+    font-weight: 500;
+}
+
+.vocab-token.key-vocab:hover {
+    background-color: #fde68a;
+    border-bottom-color: #d97706;
+}
+
+.vocab-token.active {
+    background-color: #fbbf24;
+    color: #78350f;
+    font-weight: 600;
+    border-bottom: 2px solid #d97706;
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3);
+}
+
+/* 标点符号不添加交互效果 */
+.vocab-token.punctuation {
+    cursor: default;
+    border-bottom: none;
+    padding: 0;
+}
+
+.vocab-token.punctuation:hover {
+    background-color: transparent;
+    color: inherit;
+}
+
+/* 侧边栏过渡动画 */
+#sidebar-content {
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-section {
+    animation: fadeSlideIn 0.3s ease;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 练习选项样式 */
+.exercise-option {
+    transition: all 0.15s ease;
+}
+
+.exercise-option:hover {
+    border-color: #f59e0b;
+    background-color: #fffbeb;
+}
+
+.exercise-option.selected {
+    border-color: #f59e0b;
+    background-color: #fef3c7;
+}
+
+.exercise-option.correct {
+    border-color: #10b981;
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.exercise-option.wrong {
+    border-color: #ef4444;
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* 课文段落样式 */
+.paragraph-reading {
+    transition: background-color 0.5s ease;
+    text-indent: 2em;
+}
+
+.paragraph-reading.active-reading {
+    background-color: #fef9c3;
+    border-left: 4px solid #f59e0b;
+}
+
+/* 音频播放器定制 */
+audio::-webkit-media-controls-panel {
+    background-color: #f8fafc;
+}
+
+/* 聊天区域滚动条 */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+/* 课文阅读区滚动条 */
+#reading-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+#reading-area::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+#reading-area::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+/* 响应式：小屏幕下侧边栏在下方 */
+@media (max-width: 1024px) {
+    .main-layout {
+        flex-direction: column;
+    }
+    .reading-panel, .sidebar-panel {
+        width: 100% !important;
+        height: auto !important;
+    }
+    .sidebar-panel {
+        max-height: none !important;
+    }
+}
+
+/* 加载动画 */
+.loading-spinner {
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #f59e0b;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Toast 提示 */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    z-index: 1000;
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+}
+
+.toast.success {
+    background-color: #10b981;
+}
+
+.toast.error {
+    background-color: #ef4444;
+}
+
+@keyframes toastIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes toastOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* 课文注释脚注角标 */
+.footnote-marker {
+    font-size: 0.7em;
+    color: #f59e0b;
+    font-weight: 700;
+    cursor: pointer;
+    vertical-align: super;
+    margin-left: 1px;
+    padding: 0 2px;
+    border-radius: 3px;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.footnote-marker:hover {
+    background-color: #f59e0b;
+    color: #fff;
+}
+
+/* 注释高亮闪烁 */
+.note-highlight {
+    animation: noteFlash 0.4s ease 3;
+}
+
+@keyframes noteFlash {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: #fef3c7; }
+}
+
+/* ===== 课文选择器下拉框 ===== */
+#lesson-dropdown-menu {
+    animation: dropdownIn 0.15s ease;
+}
+
+@keyframes dropdownIn {
+    from { opacity: 0; transform: scaleY(0.95); }
+    to { opacity: 1; transform: scaleY(1); }
+}
+
+.lesson-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    border-left: 3px solid transparent;
+}
+
+.lesson-dropdown-item:hover {
+    background-color: #fffbeb;
+    border-left-color: #f59e0b;
+}
+
+.lesson-dropdown-item.active {
+    background-color: #fef3c7;
+    border-left-color: #f59e0b;
+    font-weight: 600;
+}
+
+.lesson-dropdown-item .lesson-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #b45309;
+    background-color: #fef3c7;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+.lesson-dropdown-item.active .lesson-num {
+    background-color: #f59e0b;
+    color: #fff;
+}
+
+.lesson-dropdown-item .lesson-title-text {
+    font-size: 0.875rem;
+    color: #374151;
+    flex: 1;
+}
+
+/* ===== AI 聊天 Markdown 渲染样式 ===== */
+.chat-message-assistant p {
+    margin-bottom: 0.375rem;
+}
+.chat-message-assistant p:last-child {
+    margin-bottom: 0;
+}
+.chat-message-assistant strong {
+    color: #92400e;
+    font-weight: 600;
+}
+.chat-message-assistant em {
+    color: #6b7280;
+}
+.chat-message-assistant code {
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-size: 0.875em;
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+}
+.chat-message-assistant ul, .chat-message-assistant ol {
+    margin: 0.375rem 0;
+    padding-left: 1.25rem;
+}
+.chat-message-assistant li {
+    margin-bottom: 0.125rem;
+}
+.chat-message-assistant h1, .chat-message-assistant h2, .chat-message-assistant h3 {
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0.5rem 0 0.25rem;
+}
+.chat-message-assistant h1 { font-size: 1.1em; }
+.chat-message-assistant h2 { font-size: 1.05em; }
+.chat-message-assistant h3 { font-size: 1em; }
+.chat-message-assistant blockquote {
+    border-left: 3px solid #f59e0b;
+    padding-left: 0.75rem;
+    margin: 0.375rem 0;
+    color: #6b7280;
+}
+.chat-message-assistant hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 0.5rem 0;
+}
+.chat-message-assistant a {
+    color: #7c3aed;
+    text-decoration: underline;
+}
+.chat-message-assistant table {
+    border-collapse: collapse;
+    font-size: 0.8em;
+    margin: 0.375rem 0;
+}
+.chat-message-assistant th, .chat-message-assistant td {
+    border: 1px solid #e5e7eb;
+    padding: 0.25rem 0.5rem;
+}
+.chat-message-assistant th {
+    background-color: #f9fafb;
+    font-weight: 600;
+}
+/* 复选框样式 */
+.chat-message-assistant input[type="checkbox"] {
+    margin-right: 0.375rem;
+    accent-color: #f59e0b;
+}
