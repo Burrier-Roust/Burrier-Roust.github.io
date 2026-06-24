@@ -1,5 +1,5 @@
 /**
- * HSK 智能学习系统 - 前端交互逻辑
+ * 智读桥 - 前端交互逻辑
  * ====================================
  * 核心理念："以课文为中心，以点击为入口，以语境解释为核心，以练习巩固为闭环"
  */
@@ -164,7 +164,7 @@ async function loadLesson(lessonId) {
 // ==================== 渲染课文 ====================
 function renderLesson(lesson) {
     dom.lessonTitle.textContent = lesson.title;
-    document.title = `${lesson.title} - HSK 智能学习系统`;
+    document.title = `${lesson.title} - 智读桥`;
 
     const vocabWords = new Set(Object.keys(lesson.words_data || {}));
 
