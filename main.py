@@ -167,6 +167,7 @@ async def get_lesson(lesson_id: int):
         "segments": segments,
         "words_data": lesson.get("words_data", {}),
         "notes": lesson.get("notes", []),
+        "sentence_patterns": lesson.get("sentence_patterns", []),
     }
 
 

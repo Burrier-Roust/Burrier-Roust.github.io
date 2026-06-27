@@ -36,6 +36,8 @@ const dom = {
     sidebarWordDetail: $("#sidebar-word-detail"),
     readingNotes: $("#reading-notes"),
     notesList: $("#notes-list"),
+    readingPatterns: $("#reading-patterns"),
+    patternsList: $("#patterns-list"),
     // Word detail fields
     wdWord: $("#wd-word"),
     wdPos: $("#wd-pos"),
@@ -188,6 +190,8 @@ function renderLesson(lesson) {
 
     // 渲染注释
     renderNotes(lesson.notes || []);
+    // 渲染句式解析
+    renderSentencePatterns(lesson.sentence_patterns || []);
 
     // 绑定词汇点击事件
     dom.textContainer.querySelectorAll(".vocab-token.key-vocab").forEach((el) => {
@@ -285,6 +289,116 @@ function insertFootnoteMarkers(notes) {
             }
 
             break; // 每个注释只插在第一处匹配段落
+        }
+    });
+}
+
+// ==================== 句式解析渲染 ====================
+function renderSentencePatterns(patterns) {
+    if (!patterns || patterns.length === 0) {
+        dom.readingPatterns.classList.add("hidden");
+        return;
+    }
+
+    var itemsHtml = patterns.map(function(p, i) {
+        return '<div class="flex gap-3 text-sm" id="pattern-item-' + i + '">' +
+            '<span class="text-blue-500 font-bold shrink-0 mt-0.5 text-xs bg-blue-50 px-1.5 py-0.5 rounded">' +
+                escapeHtml(p.ref) +
+            '</span>' +
+            '<div class="flex-1">' +
+                '<div class="flex items-center gap-2 mb-1">' +
+                    '<span class="text-xs font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">' +
+                        escapeHtml(p.type) +
+                    '</span>' +
+                    '<span class="font-semibold text-gray-800">' +
+                        escapeHtml(p.term) +
+                    '</span>' +
+                '</div>' +
+                '<p class="text-xs text-gray-600 mb-1.5 leading-relaxed"><span class="font-medium text-gray-700">结构：</span>' +
+                    escapeHtml(p.structure) +
+                '</p>' +
+                '<p class="text-xs text-gray-500 mb-1 leading-relaxed">' +
+                    escapeHtml(p.content) +
+                '</p>' +
+                '<p class="text-xs text-blue-600 bg-white rounded px-2 py-1 border border-blue-100 leading-relaxed">' +
+                    '<span class="font-medium">例句：</span>' + escapeHtml(p.example) +
+                '</p>' +
+            '</div>' +
+        '</div>';
+    }).join("");
+
+    dom.patternsList.innerHTML = itemsHtml;
+    dom.readingPatterns.classList.remove("hidden");
+
+    // 在正文中插入句式角标
+    insertSentencePatternMarkers(patterns);
+}
+
+function insertSentencePatternMarkers(patterns) {
+    if (!patterns || patterns.length === 0) return;
+    if (!state.lessonData || !state.lessonData.paragraphs) return;
+
+    var paragraphs = dom.textContainer.querySelectorAll(".paragraph-reading");
+
+    patterns.forEach(function(pattern, i) {
+        var searchText = pattern.matchText || pattern.term;
+
+        for (var pi = 0; pi < state.lessonData.paragraphs.length; pi++) {
+            var paraText = state.lessonData.paragraphs[pi];
+            var termIndex = paraText.indexOf(searchText);
+            if (termIndex === -1) continue;
+
+            var termEnd = termIndex + searchText.length;
+            var pEl = paragraphs[pi];
+            if (!pEl) continue;
+
+            var walker = document.createTreeWalker(pEl, NodeFilter.SHOW_TEXT);
+            var charCount = 0;
+            var targetNode = null;
+            var targetOffset = 0;
+
+            while (walker.nextNode()) {
+                var node = walker.currentNode;
+                if (node.parentElement && (
+                    node.parentElement.classList.contains("footnote-marker") ||
+                    node.parentElement.classList.contains("sentence-marker")
+                )) {
+                    continue;
+                }
+                var len = node.textContent.length;
+                if (charCount + len >= termEnd) {
+                    targetNode = node;
+                    targetOffset = termEnd - charCount;
+                    break;
+                }
+                charCount += len;
+            }
+
+            if (targetNode) {
+                var marker = document.createElement("sup");
+                marker.className = "sentence-marker";
+                marker.textContent = pattern.ref;
+                marker.title = pattern.type + "：" + pattern.term;
+
+                (function(patIndex) {
+                    marker.addEventListener("click", function(e) {
+                        e.stopPropagation();
+                        var patItem = document.getElementById("pattern-item-" + patIndex);
+                        if (patItem) {
+                            patItem.scrollIntoView({ behavior: "smooth", block: "center" });
+                            patItem.classList.add("note-highlight");
+                            setTimeout(function() {
+                                patItem.classList.remove("note-highlight");
+                            }, 2000);
+                        }
+                    });
+                })(i);
+
+                var afterText = targetNode.splitText(targetOffset);
+                targetNode.parentNode.insertBefore(marker, afterText);
+            }
+
+            break;
         }
     });
 }
