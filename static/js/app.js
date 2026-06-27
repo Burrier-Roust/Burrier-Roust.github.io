@@ -345,58 +345,83 @@ function insertSentencePatternMarkers(patterns) {
 
         for (var pi = 0; pi < state.lessonData.paragraphs.length; pi++) {
             var paraText = state.lessonData.paragraphs[pi];
-            var termIndex = paraText.indexOf(searchText);
-            if (termIndex === -1) continue;
+            var startPos = paraText.indexOf(searchText);
+            if (startPos === -1) continue;
 
-            var termEnd = termIndex + searchText.length;
+            var endPos = startPos + searchText.length;
             var pEl = paragraphs[pi];
             if (!pEl) continue;
 
+            // --- 用 TreeWalker 定位起止文本节点和偏移 ---
             var walker = document.createTreeWalker(pEl, NodeFilter.SHOW_TEXT);
             var charCount = 0;
-            var targetNode = null;
-            var targetOffset = 0;
+            var startNode = null, startOffset = 0;
+            var endNode = null, endOffset = 0;
 
             while (walker.nextNode()) {
                 var node = walker.currentNode;
                 if (node.parentElement && (
                     node.parentElement.classList.contains("footnote-marker") ||
-                    node.parentElement.classList.contains("sentence-marker")
+                    node.parentElement.classList.contains("sentence-marker") ||
+                    node.parentElement.classList.contains("sentence-highlight")
                 )) {
                     continue;
                 }
                 var len = node.textContent.length;
-                if (charCount + len >= termEnd) {
-                    targetNode = node;
-                    targetOffset = termEnd - charCount;
+
+                if (!startNode && charCount + len > startPos) {
+                    startNode = node;
+                    startOffset = startPos - charCount;
+                }
+                if (!endNode && charCount + len >= endPos) {
+                    endNode = node;
+                    endOffset = endPos - charCount;
                     break;
                 }
                 charCount += len;
             }
 
-            if (targetNode) {
-                var marker = document.createElement("sup");
-                marker.className = "sentence-marker";
-                marker.textContent = pattern.ref;
-                marker.title = pattern.type + "：" + pattern.term;
+            if (!startNode || !endNode) break;
 
-                (function(patIndex) {
-                    marker.addEventListener("click", function(e) {
-                        e.stopPropagation();
-                        var patItem = document.getElementById("pattern-item-" + patIndex);
-                        if (patItem) {
-                            patItem.scrollIntoView({ behavior: "smooth", block: "center" });
-                            patItem.classList.add("note-highlight");
-                            setTimeout(function() {
-                                patItem.classList.remove("note-highlight");
-                            }, 2000);
-                        }
-                    });
-                })(i);
+            // --- 用 Range API 包裹匹配文本（自动处理跨元素边界） ---
+            var range = document.createRange();
+            range.setStart(startNode, startOffset);
+            range.setEnd(endNode, endOffset);
 
-                var afterText = targetNode.splitText(targetOffset);
-                targetNode.parentNode.insertBefore(marker, afterText);
+            var wrapper = document.createElement("span");
+            wrapper.className = "sentence-highlight";
+            wrapper.dataset.patternRef = pattern.ref;
+
+            try {
+                range.surroundContents(wrapper);
+            } catch (e) {
+                // 跨元素边界时 surroundContents 会报错，改用 extractContents
+                var fragment = range.extractContents();
+                wrapper.appendChild(fragment);
+                range.insertNode(wrapper);
             }
+
+            // --- 在匹配文本末尾插入句式角标 ---
+            var marker = document.createElement("sup");
+            marker.className = "sentence-marker";
+            marker.textContent = pattern.ref;
+            marker.title = pattern.type + "：" + pattern.term;
+
+            (function(patIndex) {
+                marker.addEventListener("click", function(e) {
+                    e.stopPropagation();
+                    var patItem = document.getElementById("pattern-item-" + patIndex);
+                    if (patItem) {
+                        patItem.scrollIntoView({ behavior: "smooth", block: "center" });
+                        patItem.classList.add("note-highlight");
+                        setTimeout(function() {
+                            patItem.classList.remove("note-highlight");
+                        }, 2000);
+                    }
+                });
+            })(i);
+
+            wrapper.parentNode.insertBefore(marker, wrapper.nextSibling);
 
             break;
         }

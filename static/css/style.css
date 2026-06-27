@@ -244,6 +244,25 @@ audio::-webkit-media-controls-panel {
     color: #fff;
 }
 
+/* 句式原文高亮：淡蓝底 + 细蓝下划线 */
+.sentence-highlight {
+    background: rgba(219, 234, 254, 0.45);
+    border-bottom: 1.5px solid rgba(37, 99, 235, 0.35);
+    border-radius: 2px;
+    padding: 1px 0;
+    transition: background 0.2s ease;
+}
+
+.sentence-highlight:hover {
+    background: rgba(191, 219, 254, 0.6);
+}
+
+/* 高亮区域内生词保持橙色样式不被覆盖 */
+.sentence-highlight .vocab-token.key-vocab {
+    border-bottom: 2px dashed #f59e0b;
+    background: transparent;
+}
+
 /* 句式高亮闪烁（蓝色） */
 #pattern-item-\.note-highlight,
 [id^="pattern-item-"].note-highlight {
