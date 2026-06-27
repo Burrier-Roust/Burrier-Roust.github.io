@@ -175,13 +175,10 @@ function renderLesson(lesson) {
         html += '<p class="paragraph-reading leading-loose" data-para="' + pi + '">';
         for (const token of segs) {
             const text = escapeHtml(token.text);
-            const isPunct = /^[，。！？；：、""''《》（）\s]+$/.test(token.text);
-            if (isPunct) {
-                html += `<span class="vocab-token punctuation">${text}</span>`;
-            } else if (token.is_vocab && vocabWords.has(token.text)) {
+            if (token.is_vocab && vocabWords.has(token.text)) {
                 html += `<span class="vocab-token key-vocab" data-word="${text}" title="点击查看「${text}」详情">${text}</span>`;
             } else {
-                html += `<span class="vocab-token" data-word="${text}">${text}</span>`;
+                html += text;
             }
         }
         html += "</p>";
@@ -226,49 +223,68 @@ function insertFootnoteMarkers(notes) {
     if (!state.lessonData || !state.lessonData.paragraphs) return;
 
     const paragraphs = dom.textContainer.querySelectorAll(".paragraph-reading");
-    paragraphs.forEach((p, pi) => {
-        const originalText = state.lessonData.paragraphs[pi];
-        if (!originalText) return;
 
-        const spans = Array.from(p.querySelectorAll(".vocab-token"));
+    notes.forEach(function(note, i) {
+        const searchText = note.matchText || note.term;
 
-        for (let i = 0; i < notes.length; i++) {
-            const note = notes[i];
-            // 优先使用 matchText（唯一匹配文本），回退到 term
-            const searchText = note.matchText || note.term;
-            const termIndex = originalText.indexOf(searchText);
+        // 找到包含该注释词的段落
+        for (var pi = 0; pi < state.lessonData.paragraphs.length; pi++) {
+            var paraText = state.lessonData.paragraphs[pi];
+            var termIndex = paraText.indexOf(searchText);
             if (termIndex === -1) continue;
 
-            // 逐 token 累计字符数，找到 searchText 最后一个字所在的 span
-            const termEnd = termIndex + searchText.length;
-            let charPos = 0;
-            let targetSpan = null;
+            var termEnd = termIndex + searchText.length;
+            var pEl = paragraphs[pi];
+            if (!pEl) continue;
 
-            for (const span of spans) {
-                const tok = span.getAttribute("data-word") || span.textContent || "";
-                charPos += tok.length;
-                if (charPos >= termEnd && targetSpan === null) {
-                    targetSpan = span;
+            // 用 TreeWalker 遍历文本节点，定位注释插入位置
+            var walker = document.createTreeWalker(pEl, NodeFilter.SHOW_TEXT);
+            var charCount = 0;
+            var targetNode = null;
+            var targetOffset = 0;
+
+            while (walker.nextNode()) {
+                var node = walker.currentNode;
+                // 跳过脚注标记内的文本
+                if (node.parentElement && node.parentElement.classList.contains("footnote-marker")) {
+                    continue;
+                }
+                var len = node.textContent.length;
+                if (charCount + len >= termEnd) {
+                    targetNode = node;
+                    targetOffset = termEnd - charCount;
                     break;
                 }
+                charCount += len;
             }
 
-            if (targetSpan && !targetSpan.querySelector(".footnote-marker")) {
-                const marker = document.createElement("sup");
+            if (targetNode) {
+                var marker = document.createElement("sup");
                 marker.className = "footnote-marker";
                 marker.textContent = note.ref;
                 marker.title = note.term + ": " + note.content;
-                marker.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    const noteItem = document.getElementById("note-item-" + i);
-                    if (noteItem) {
-                        noteItem.scrollIntoView({ behavior: "smooth", block: "center" });
-                        noteItem.classList.add("note-highlight");
-                        setTimeout(() => noteItem.classList.remove("note-highlight"), 2000);
-                    }
-                });
-                targetSpan.appendChild(marker);
+
+                // 用闭包保留当前 note 的索引
+                (function(noteIndex) {
+                    marker.addEventListener("click", function(e) {
+                        e.stopPropagation();
+                        var noteItem = document.getElementById("note-item-" + noteIndex);
+                        if (noteItem) {
+                            noteItem.scrollIntoView({ behavior: "smooth", block: "center" });
+                            noteItem.classList.add("note-highlight");
+                            setTimeout(function() {
+                                noteItem.classList.remove("note-highlight");
+                            }, 2000);
+                        }
+                    });
+                })(i);
+
+                // 在文本节点的指定偏移处切开，插入角标
+                var afterText = targetNode.splitText(targetOffset);
+                targetNode.parentNode.insertBefore(marker, afterText);
             }
+
+            break; // 每个注释只插在第一处匹配段落
         }
     });
 }
