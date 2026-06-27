@@ -362,8 +362,7 @@ function insertSentencePatternMarkers(patterns) {
                 var node = walker.currentNode;
                 if (node.parentElement && (
                     node.parentElement.classList.contains("footnote-marker") ||
-                    node.parentElement.classList.contains("sentence-marker") ||
-                    node.parentElement.classList.contains("sentence-highlight")
+                    node.parentElement.classList.contains("sentence-marker")
                 )) {
                     continue;
                 }
