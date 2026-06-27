@@ -50,10 +50,7 @@ def _init_jieba():
             # 注释词（如人名、地名、术语），高优先级确保不被切分
             for note in data.get("notes", []):
                 jieba.add_word(note["term"], freq=80000)
-            # 对单字生词，尝试拆分常见 2 字组合（如 "小舟"→"小"+"舟"）
-            for word in data.get("words_data", {}):
-                if len(word) == 1:
-                    jieba.suggest_freq(word, tune=True)
+            # 注：单字生词不再参与多字词拆分，避免"结束"中的"束"被误拆
 
 
 @asynccontextmanager
@@ -77,13 +74,13 @@ def _split_token_by_vocab(token: str, vocab_words: set[str]) -> list[dict]:
     """将含生词的 token 拆分为子 token，生词部分标记 is_vocab=True。
 
     例如 '呼啸而过' 含生词 '呼啸' → ['呼啸'(True), '而'(False), '过'(False)]
-    例如 '小舟' 含单字词 '舟' → ['小'(False), '舟'(True)]
+    仅拆分多字生词（len>=2），单字生词只在精确匹配时生效，避免误拆复合词。
     """
     if not token or len(token) <= 1:
         return [{"text": token, "is_vocab": token in vocab_words}]
 
     candidates = sorted(
-        [w for w in vocab_words if w in token and w != token],
+        [w for w in vocab_words if w in token and w != token and len(w) >= 2],
         key=len,
         reverse=True,
     )
@@ -121,8 +118,8 @@ def segment_paragraph(text: str, vocab_words: set[str]) -> list[dict]:
             continue
         if token in vocab_words:
             result.append({"text": token, "is_vocab": True})
-        elif any(w in token for w in vocab_words if w != token):
-            # token 内含生词，拆分为子 token
+        elif any(w in token for w in vocab_words if w != token and len(w) >= 2):
+            # token 内含生词（仅多字词），拆分为子 token
             result.extend(_split_token_by_vocab(token, vocab_words))
         else:
             result.append({"text": token, "is_vocab": False})
