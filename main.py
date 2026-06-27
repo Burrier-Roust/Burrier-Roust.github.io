@@ -74,18 +74,28 @@ def _split_token_by_vocab(token: str, vocab_words: set[str]) -> list[dict]:
     """将含生词的 token 拆分为子 token，生词部分标记 is_vocab=True。
 
     例如 '呼啸而过' 含生词 '呼啸' → ['呼啸'(True), '而'(False), '过'(False)]
-    仅拆分多字生词（len>=2），单字生词只在精确匹配时生效，避免误拆复合词。
+    例如 '小舟' 含单字词 '舟' → ['小'(False), '舟'(True)]
+
+    对单字生词会做 jieba 重分词验证：若 jieba 将该 token 视为一个整体
+    （如'结束'），则不拆分，避免把'束'从已知复合词中误拆出来。
     """
     if not token or len(token) <= 1:
         return [{"text": token, "is_vocab": token in vocab_words}]
 
     candidates = sorted(
-        [w for w in vocab_words if w in token and w != token and len(w) >= 2],
+        [w for w in vocab_words if w in token and w != token],
         key=len,
         reverse=True,
     )
     if not candidates:
         return [{"text": token, "is_vocab": False}]
+
+    # 单字生词容易误拆常见复合词（如把"结束"拆成"结"+"束"），
+    # 用 jieba 重分词验证：jieba 认为不可拆就不拆
+    if all(len(w) == 1 for w in candidates):
+        sub_tokens = list(jieba.cut(token, HMM=False))
+        if len(sub_tokens) == 1:
+            return [{"text": token, "is_vocab": False}]
 
     result = []
     i = 0
@@ -108,7 +118,8 @@ def segment_paragraph(text: str, vocab_words: set[str]) -> list[dict]:
     """对段落进行中文分词，标记每个 token 是否为生词。
 
     jieba 可能将生词合并进更大的组合（如'小舟'含'舟'），本函数通过二次拆分确保
-    所有生词都能被正确标记。
+    所有生词都能被正确标记。单字生词的误拆由 _split_token_by_vocab 内的
+    jieba 重分词验证来防止。
     """
     tokens = list(jieba.cut(text))
     result = []
@@ -118,8 +129,7 @@ def segment_paragraph(text: str, vocab_words: set[str]) -> list[dict]:
             continue
         if token in vocab_words:
             result.append({"text": token, "is_vocab": True})
-        elif any(w in token for w in vocab_words if w != token and len(w) >= 2):
-            # token 内含生词（仅多字词），拆分为子 token
+        elif any(w in token for w in vocab_words if w != token):
             result.extend(_split_token_by_vocab(token, vocab_words))
         else:
             result.append({"text": token, "is_vocab": False})
